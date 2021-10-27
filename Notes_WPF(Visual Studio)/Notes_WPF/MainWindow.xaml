@@ -73,23 +73,53 @@
                 <RowDefinition Height="9*"/>
             </Grid.RowDefinitions>
             <Border Grid.Column="0"
-                    Margin="-2"
-                    BorderThickness="2"
+                    Margin="-1"
+                    BorderThickness="1"
                     BorderBrush="#17212b">
                 <Button Grid.Row="0"
+                        FontStretch="Normal"
+                        VerticalContentAlignment="Center"
                         Content="Notes"
                         Background="#1b2734"
-                        Foreground="Azure"
+                        Foreground="#dcdde3"
                         FontSize="35"
                         FontWeight="Bold"
                         BorderThickness="0"
-                        Cursor="Hand"
-                        />
+                        Cursor="Hand"/>
             </Border>
+            <Border Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="-1"
+                    BorderThickness="1"
+                    BorderBrush="#17212b">
+                <Grid Margin="15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
 
+                    <Label Content="Filename"
+                           MinHeight="30"
+                           FontSize="30"
+                           VerticalContentAlignment="Center"
+                           FontStretch="Normal"
+                           Foreground="#dcdde3"
+                           FontWeight="Bold"/>
+
+                    <Label Grid.Column="1"
+                           Content="Creation date"
+                           Margin="5 0 0 0"
+                           FontSize="20"
+                           VerticalContentAlignment="Center"
+                           FontStretch="Normal"
+                           Foreground="#dcdde3"
+                           FontWeight="Bold"/>
+                </Grid>
+            </Border>
+            
             <TextBox Grid.Row="1" 
                      Grid.Column="1"
-                     Background="#17212b"
+                     Background="#121d2d"
                      Padding="15"
                      Foreground="Azure"
                      FontSize="25"
@@ -112,7 +142,7 @@
 
                     <TextBlock Text="Sort By:"
                                FontSize="25"
-                               Foreground="Azure"
+                               Foreground="#dcdde3"
                                VerticalAlignment="Center" 
                                HorizontalAlignment="Center">
                     </TextBlock>
@@ -121,12 +151,18 @@
                             Margin="10"
                             Content="A->Z"
                             FontWeight="Bold"
+                            BorderThickness="0"
+                            Foreground="#dcdde3"
+                            Background="#1c1d29"
                     />
                     <Button Grid.Column="2"
                             Margin="10"
                             Content="⌚"
                             FontSize="20"
                             FontWeight="Normal"
+                            BorderThickness="0"
+                            Foreground="#dcdde3"
+                            Background="#1c1d29"
                     />
                 </Grid>
                 
@@ -137,20 +173,21 @@
                     <StackPanel Orientation="Vertical"
                                 Margin="0 0 2 0"
                                 >
-                        <Button Height="150">Example</Button>
-                        <Button Height="150">Example</Button>
-                        <Button Height="150">Example</Button>
-                        <Button Height="150">Example</Button>
-                        <Button Height="150">Example</Button>
+                        <Button Height="130">Example</Button>
+                        <Button Height="130">Example</Button>
+                        <Button Height="130">Example</Button>
+                        <Button Height="130">Example</Button>
+                        <Button Height="130">Example</Button>
                     </StackPanel>
                     
                 </ScrollViewer>
 
                 <Button Grid.Row="2"
-                        Margin="100 10"
-                        Content="+"
-                        Background="#2b5278"
-                        Foreground="Azure"
+                        Height="35"
+                        Width="35"
+                        Content="＋"
+                        Background="#1c1d29"
+                        Foreground="#dcdde3"
                         BorderThickness="0"
                         FontSize="25"
                         VerticalAlignment="Center"

@@ -98,15 +98,22 @@
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Label Content="Filename"
-                           MinHeight="30"
-                           FontSize="30"
-                           VerticalContentAlignment="Center"
-                           FontStretch="Normal"
-                           Foreground="#dcdde3"
-                           FontWeight="Bold"/>
+                    <TextBox x:Name="Filename_TextBox"
+                             IsEnabled="False"
+                             Text="Filename"
+                             MinHeight="30"
+                             FontSize="30"
+                             Padding="5 0 0 0"
+                             BorderThickness="0"
+                             Background="#121d2d"
+                             VerticalContentAlignment="Center"
+                             FontStretch="Normal"
+                             Foreground="#dcdde3"
+                             FontWeight="Bold" 
+                             LostKeyboardFocus="Filename_TextBox_LostKeyboardFocus"/>
 
-                    <Label Grid.Column="1"
+                    <Label x:Name="CreationData_label"
+                           Grid.Column="1"
                            Content="Creation date"
                            Margin="5 0 0 0"
                            FontSize="20"
@@ -117,13 +124,16 @@
                 </Grid>
             </Border>
             
-            <TextBox Grid.Row="1" 
+            <TextBox x:Name="Edit_TextBox"
+                     Grid.Row="1" 
                      Grid.Column="1"
                      Background="#121d2d"
                      Padding="15"
                      Foreground="Azure"
                      FontSize="25"
-                     BorderThickness="0"/>
+                     BorderThickness="0"
+                     TextWrapping="Wrap"
+                     LostKeyboardFocus="Edit_TextBox_LostKeyboardFocus"/>
 
             <Grid Grid.Column="0" Grid.Row="1">
                 <Grid.RowDefinitions>
@@ -170,19 +180,14 @@
                 <ScrollViewer Grid.Row="1"
                               BorderThickness="0"
                               >
-                    <StackPanel Orientation="Vertical"
-                                Margin="0 0 2 0"
-                                >
-                        <Button Height="130">Example</Button>
-                        <Button Height="130">Example</Button>
-                        <Button Height="130">Example</Button>
-                        <Button Height="130">Example</Button>
-                        <Button Height="130">Example</Button>
+                    <StackPanel x:Name="Buttons_StackPanel" Orientation="Vertical"
+                                Margin="0 0 2 0">
                     </StackPanel>
                     
                 </ScrollViewer>
 
-                <Button Grid.Row="2"
+                <Button x:Name="AddNote_Button"
+                        Grid.Row="2"
                         Height="35"
                         Width="35"
                         Content="＋"
@@ -192,8 +197,8 @@
                         FontSize="25"
                         VerticalAlignment="Center"
                         FontWeight="UltraBold"
-                        Cursor="Hand"
-                        />
+                        Click="AddNote_Button_Click"
+                        Cursor="Hand"/>
             </Grid>
         </Grid>
     </Grid>

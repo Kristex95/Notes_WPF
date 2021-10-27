@@ -12,12 +12,13 @@ namespace Notes_WPF
         public string Path;
         public string Name;
         public DateTime CreatiionDate;
-
+        public bool isArchived = false;
         public Notefile()
         {
             Path = "";
             Name = "";
             CreatiionDate = DateTime.MinValue;
+            
         }
 
         public string ReadFromFile()

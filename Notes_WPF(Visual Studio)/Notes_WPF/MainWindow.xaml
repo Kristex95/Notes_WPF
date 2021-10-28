@@ -22,11 +22,20 @@
                 Background="#0e1621"
                 BorderThickness="0">
             <Grid HorizontalAlignment="Stretch">
-                <Label Foreground="Azure"
+                <Label Foreground="Gray"
                        FontWeight="Bold"
+                       HorizontalAlignment="Left"
                        FontSize="15">
                     Note Application
                 </Label>
+
+                <Label Name="LiveTimeLabel" 
+                       Content="%TIME%" 
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Top" 
+                       FontSize="15" 
+                       FontWeight="Bold" 
+                       Foreground="Gray" />
 
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right">
@@ -160,6 +169,7 @@
                      FontSize="25"
                      BorderThickness="0"
                      TextWrapping="Wrap"
+                     AcceptsReturn="True"
                      LostKeyboardFocus="Edit_TextBox_LostKeyboardFocus"/>
 
             <Grid Grid.Column="0" Grid.Row="1">
@@ -184,7 +194,8 @@
                                HorizontalAlignment="Center">
                     </TextBlock>
 
-                    <Button Grid.Column="1"
+                    <Button x:Name="AlphabetSort_Button"
+                            Grid.Column="1"
                             Margin="10"
                             Content="A➩Z"
                             FontWeight="Bold"
@@ -192,9 +203,10 @@
                             FontSize="15"
                             BorderBrush="#316da8"
                             Foreground="#478BCE"
-                            Background="#1E1E1E"
+                            Background="#1E1E1E" Click="AlphabetSort_Button_Click"
                     />
-                    <Button Grid.Column="2"
+                    <Button x:Name="CreationDateSort_Button"
+                            Grid.Column="2"
                             Margin="10"
                             Content="⌚"
                             FontSize="25"
@@ -202,7 +214,7 @@
                             BorderBrush="#316da8"
                             BorderThickness="0.7"
                             Foreground="#478BCE"
-                            Background="#1E1E1E"
+                            Background="#1E1E1E" Click="CreationDateSort_Button_Click"
                     />
                 </Grid>
                 

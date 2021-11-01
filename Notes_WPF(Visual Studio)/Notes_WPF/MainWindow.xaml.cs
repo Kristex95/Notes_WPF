@@ -111,13 +111,13 @@ namespace Notes_WPF
         private void AddNote_Button_Click(object sender, RoutedEventArgs e)
         {
             var bc = new BrushConverter();
-            var newButton = new Button() { Content = "New Note.", Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3") ,Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
+            var newButton = new Button() { Content = "", Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3") ,Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
             newButton.Click += SelectedNoteButton_Click;
             Buttons_StackPanel.Children.Add(newButton); //add button to stackpanel
             Buttons_ScrollViewer.ScrollToBottom();
 
             //creating new file
-            string NewFilePath = NotesFilePath + "\\" + "New Note." + ".txt";
+            string NewFilePath = NotesFilePath + "\\" + " " + ".txt";
             var newFile = File.Create(NewFilePath);
             newFile.Close();
             Notefile nf = new Notefile();
@@ -128,6 +128,9 @@ namespace Notes_WPF
             nf.isArchived = false;
             
             ButtFileDict.Add(newButton, nf);       //add new file and button to the dict
+            SelectedNoteButton_Click(newButton, null);
+            Filename_TextBox.Focus();
+            Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
         }
 
         private void SelectedNoteButton_Click(object sender, RoutedEventArgs e)
@@ -139,6 +142,9 @@ namespace Notes_WPF
             Filename_TextBox.Text = System.IO.Path.GetFileNameWithoutExtension(nf.Name);    //edit textbox text equal to file name
             CreationData_label.Content = nf.CreatiionDate;                                  //changing date info label text equal to file creation data
             Filename_TextBox.IsEnabled = true;
+            Filename_TextBox.CaretIndex = 0;
+            Edit_TextBox.Focus();
+            Edit_TextBox.CaretIndex = Edit_TextBox.Text.Length;
         }
 
         private void Edit_TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -163,29 +169,41 @@ namespace Notes_WPF
                     }
                 }
 
-                if (Filename_TextBox.Text.EndsWith('.'))
+                
+                if (Filename_TextBox.Text.Trim() == "" && Edit_TextBox.Text.Trim() == "")
                 {
-                    MessageBox.Show("File name can't end with . symbol");
+                    DeleteLastNote();
+                    Trace.WriteLine("123");
                 }
-                else if (SameNameCounter >= 1 || Filename_TextBox.Text == "")
+                else if (Filename_TextBox.Text.Trim() == "" && Edit_TextBox.Text != null)
+                {
+                    MessageBox.Show("Enter name for your file");
+                    Filename_TextBox.Focus();
+                    Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
+
+                }
+                else if (SameNameCounter > 1 || Filename_TextBox.Text == "")
                 {
                     MessageBox.Show("File with this name already exists!");
                     Filename_TextBox.Text = System.IO.Path.GetFileNameWithoutExtension(nf.Name);
+                    Filename_TextBox.Focus();
+                    Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
+                    Trace.Write('2');
                 }
                 else {
                     LastPressedButton.Content = Filename_TextBox.Text.Trim();
                     string ParentPath = nf.Path.Remove(nf.Path.Length - nf.Name.Length - 1);    //getting file parent path
 
                     //changing file name
-                    File.Move(nf.Path, ParentPath + "\\" + Filename_TextBox.Text + ".txt");
-                    if (nf.Name != Filename_TextBox.Text + ".txt")
+                    File.Move(nf.Path, ParentPath + "\\" + Filename_TextBox.Text.Trim() + ".txt");
+                    if (nf.Name != Filename_TextBox.Text.Trim() + ".txt")
                     {
                         File.Delete(nf.Path);                                                       //deleting old file
                     }
                     nf.Name = Filename_TextBox.Text.Trim() + ".txt";
                     nf.Path = ParentPath + "\\" + nf.Name;
+                    Trace.Write('3');
                 }
-                
             }
         }
 
@@ -236,15 +254,7 @@ namespace Notes_WPF
 
         private void DeleteNote_Button_Click(object sender, RoutedEventArgs e)
         {
-            if(LastPressedButton != null) {
-                ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf);//getting file that is connected to a button
-                File.Delete(nf.Path);
-                Buttons_StackPanel.Children.Remove(LastPressedButton);
-                ButtFileDict.Remove(LastPressedButton);
-                Edit_TextBox.Text = "";
-                Filename_TextBox.Text = "";
-                CreationData_label.Content = "";
-            }
+            DeleteLastNote();
         }
 
         private void SendToAcrhive_Button_Click(object sender, RoutedEventArgs e)
@@ -369,9 +379,23 @@ namespace Notes_WPF
             }
         }
 
-        void timer_Tick(object sender, EventArgs e)
+        private void timer_Tick(object sender, EventArgs e)
         {
             LiveTimeLabel.Content = DateTime.Now.ToString("HH:mm:ss");
+        }
+
+        private void DeleteLastNote()
+        {
+            if (LastPressedButton != null)
+            {
+                ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf);//getting file that is connected to a button
+                File.Delete(nf.Path);
+                Buttons_StackPanel.Children.Remove(LastPressedButton);
+                ButtFileDict.Remove(LastPressedButton);
+                Edit_TextBox.Text = "";
+                Filename_TextBox.Text = "";
+                CreationData_label.Content = "";
+            }
         }
     }
 }

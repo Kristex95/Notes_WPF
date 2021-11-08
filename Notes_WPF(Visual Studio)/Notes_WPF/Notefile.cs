@@ -4,31 +4,45 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
+using System.Globalization;
 
 namespace Notes_WPF
 {
     class Notefile
     {
-        public string Path;
-        public string Name;
-        public DateTime CreatiionDate;
-        public bool isArchived = false;
+        [Index(0)]
+        public string Name { get; set; }
+        [Index(1)]
+        public string Text { get; set; }
+        [Index(2)]
+        public DateTime CreationDate { get; set; }
+        [Index(3)]
+        public bool IsArchived { get; set; }
+
+
+
         public Notefile()
         {
-            Path = "";
             Name = "";
-            CreatiionDate = DateTime.MinValue;
-            
+            Text = "";
+            CreationDate = DateTime.MinValue;
+            IsArchived = false;
         }
 
-        public string ReadFromFile()
+        public Notefile(string Name, string Text, DateTime CreationDate, bool IsArchived)
         {
-            return File.ReadAllText(Path);
+            this.Name = Name;
+            this.Text = Text;
+            this.CreationDate = CreationDate;
+            this.IsArchived = IsArchived;
         }
 
         public void WriteToFile(string text)
         {
-            File.WriteAllText(Path, text);
+            //TO DO
         }
     }
 }

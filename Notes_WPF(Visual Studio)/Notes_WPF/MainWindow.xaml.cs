@@ -15,61 +15,49 @@ using System.Windows.Shapes;
 using System.IO;
 using System.Diagnostics;
 using System.Windows.Threading;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
+using System.Globalization;
 
 namespace Notes_WPF
 {
-    
     public partial class MainWindow : Window
     {
-
-        Dictionary<Button, Notefile> ButtFileDict = new Dictionary<Button, Notefile>();
+        Dictionary<Button, Notefile> ButtonFileDict = new Dictionary<Button, Notefile>();
         Button LastPressedButton = null;
-        string NotesFilePath = @"..\..\..\Notes_text";
-        string ArchiveFilePath = @"..\..\..\Archive_notes";
         bool NotesOpened = true;
+        string NotesFileCSVPath = @"..\..\..\Notes.csv";
+
+        List<Notefile> FileList = new List<Notefile>();
 
         public MainWindow()
         {
             InitializeComponent();
 
-            DirectoryInfo NotesDir = new DirectoryInfo(NotesFilePath); //choose directory
-
-            FileInfo[] txtFiles = NotesDir.GetFiles("*.txt", SearchOption.AllDirectories); //Get all info about .txt files from chosen directory
-
             var bc = new BrushConverter();
 
-            foreach (FileInfo file in txtFiles)
+
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                //add file data to list
-                Notefile newNote = new Notefile();
-                newNote.Path = file.FullName;
-                newNote.Name = file.Name;
-                newNote.CreatiionDate = file.CreationTime;
-                newNote.isArchived = false;
-                //NoteFilesList.Add(newNote);
-
-                string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(newNote.Name);    //get file name without any extentions (.txt)
-                var newButton = new Button() { Content = nameWithoutExt, FontSize = 20, Height = 40, Foreground = (Brush)bc.ConvertFrom("#dcdde3"), Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
-                newButton.Click += SelectedNoteButton_Click;
-                ButtFileDict.Add(newButton, newNote);   //add button and file to dict
-                Buttons_StackPanel.Children.Add(newButton); //add new button to StackPanel
-            }
-
-            DirectoryInfo ArchivesDirectory = new DirectoryInfo(ArchiveFilePath);
-            FileInfo[] ArchFiles = ArchivesDirectory.GetFiles("*.txt", SearchOption.AllDirectories);
-
-            foreach(FileInfo file in ArchFiles)
+                HasHeaderRecord = false,
+            };
+            using (var streamReader = new StreamReader(@"..\..\..\Notes.csv"))
+            using (var csvReader = new CsvReader(streamReader, config))
             {
-                Notefile newNote = new Notefile();
-                newNote.Path = file.FullName;
-                newNote.Name = file.Name;
-                newNote.CreatiionDate = file.CreationTime;
-                newNote.isArchived = true;
+                var records = csvReader.GetRecords<Notefile>();
+                foreach (var item in records)
+                {
+                    var newButton = new Button() { Content = item.Name, /*Name =  ,*/ Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3"), Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
+                    newButton.Click += SelectedNoteButton_Click;
 
-                string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(newNote.Name);    //get file name without any extentions (.txt)
-                var newButton = new Button() { Content = nameWithoutExt, FontSize = 20, Height = 40, Foreground = (Brush)bc.ConvertFrom("#dcdde3"), Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
-                newButton.Click += SelectedNoteButton_Click;
-                ButtFileDict.Add(newButton, newNote);   //add button and file to dict
+                    if (!item.IsArchived) { 
+                        
+                        Buttons_StackPanel.Children.Add(newButton);
+                    }
+                
+                    ButtonFileDict.Add(newButton, item);
+                }
             }
 
             DispatcherTimer LiveTime = new DispatcherTimer();
@@ -110,105 +98,110 @@ namespace Notes_WPF
 
         private void AddNote_Button_Click(object sender, RoutedEventArgs e)
         {
+            //add new note
+            var NewNote = new List<Notefile>
+            {
+                new Notefile { Name = "New Note", Text = "", CreationDate = DateTime.Now, IsArchived = false },
+            };
+            var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = false,
+            };
+            using (var Stream = File.Open(NotesFileCSVPath, FileMode.Append))
+            using (var Writer = new StreamWriter(Stream))
+            using (var CSV = new CsvWriter(Writer, Config))
+            {
+                CSV.WriteRecords(NewNote);
+            }
+            
+
+            //add new button
             var bc = new BrushConverter();
-            var newButton = new Button() { Content = "", Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3") ,Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
+            var newButton = new Button() { Content = NewNote[0].Name, /*Name =  ,*/ Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3") ,Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
             newButton.Click += SelectedNoteButton_Click;
+            ButtonFileDict.Add(newButton, NewNote[0]);
             Buttons_StackPanel.Children.Add(newButton); //add button to stackpanel
             Buttons_ScrollViewer.ScrollToBottom();
+            LastPressedButton = newButton;
 
-            //creating new file
-            string NewFilePath = NotesFilePath + "\\" + " " + ".txt";
-            var newFile = File.Create(NewFilePath);
-            newFile.Close();
-            Notefile nf = new Notefile();
-            nf.Path = NewFilePath;
-            FileInfo NewFileInfo = new FileInfo(NewFilePath);
-            nf.Name = NewFileInfo.Name;
-            nf.CreatiionDate = NewFileInfo.CreationTime;
-            nf.isArchived = false;
-            
-            ButtFileDict.Add(newButton, nf);       //add new file and button to the dict
-            SelectedNoteButton_Click(newButton, null);
-            Filename_TextBox.Focus();
-            Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
+            Filename_TextBox.CaretIndex = 0;
+            Filename_TextBox.Text = newButton.Content.ToString();
+            Filename_TextBox.IsEnabled = true;
+            CreationData_label.Content = NewNote[0].CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+            Edit_TextBox.Focus();
+            Edit_TextBox.Text = "";
         }
 
         private void SelectedNoteButton_Click(object sender, RoutedEventArgs e)
         {
-            ButtFileDict.TryGetValue((Button)sender, out Notefile nf);                 //get file connected to this button
-
-            Edit_TextBox.Text = nf.ReadFromFile();                                          //change textbox text equal to file text
             LastPressedButton = (Button)sender;
-            Filename_TextBox.Text = System.IO.Path.GetFileNameWithoutExtension(nf.Name);    //edit textbox text equal to file name
-            CreationData_label.Content = nf.CreatiionDate;                                  //changing date info label text equal to file creation data
-            Filename_TextBox.IsEnabled = true;
-            Filename_TextBox.CaretIndex = 0;
-            Edit_TextBox.Focus();
-            Edit_TextBox.CaretIndex = Edit_TextBox.Text.Length;
+
+            //get file connected to this button
+            if (ButtonFileDict.TryGetValue((Button)sender, out Notefile Note)) {
+
+                Trace.WriteLine('1');
+
+                //UI changes
+                Filename_TextBox.Text = Note.Name;
+                CreationData_label.Content = Note.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+
+                //Textbox
+                Edit_TextBox.Text = Note.Text;
+                Filename_TextBox.IsEnabled = true;
+                Edit_TextBox.Focus();
+                Edit_TextBox.CaretIndex = Edit_TextBox.Text.Length;
+            }                    
         }
 
         private void Edit_TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            if (LastPressedButton != null && ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf))
-            {                
-                nf.WriteToFile(Edit_TextBox.Text);
+            if (LastPressedButton != null && ButtonFileDict.TryGetValue(LastPressedButton, out Notefile Note))
+            {
+                Note.Text = Edit_TextBox.Text;
+
+                var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false,
+                };
+                using (var Stream = File.Open(NotesFileCSVPath, FileMode.Create))
+                using (var Writer = new StreamWriter(Stream))
+                using (var CSV = new CsvWriter(Writer, Config))
+                {
+                    CSV.WriteRecords(ButtonFileDict.Values);
+                }
             }
         }
 
         private void Filename_TextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
         {
-            int SameNameCounter = 0;
-            if (LastPressedButton != null || NotesOpened)
+            if (LastPressedButton != null && ButtonFileDict.TryGetValue(LastPressedButton, out Notefile Note))
             {
-                ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf);//getting file that is connected to a button
-                foreach (KeyValuePair<Button, Notefile> pair in ButtFileDict)
-                {
-                    if (Filename_TextBox.Text.Trim().ToLower() + ".txt" == pair.Value.Name.ToLower())
-                    {
-                        SameNameCounter++;
-                    }
-                }
+                Note.Name = Filename_TextBox.Text;
+                LastPressedButton.Content = Note.Name;
 
-                
-                if (Filename_TextBox.Text.Trim() == "" && Edit_TextBox.Text.Trim() == "")
+                var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
                 {
-                    DeleteLastNote();
-                    Trace.WriteLine("123");
-                }
-                else if (Filename_TextBox.Text.Trim() == "" && Edit_TextBox.Text != null)
+                    HasHeaderRecord = false,
+                };
+                using (var Stream = File.Open(NotesFileCSVPath, FileMode.Create))
+                using (var Writer = new StreamWriter(Stream))
+                using (var CSV = new CsvWriter(Writer, Config))
                 {
-                    MessageBox.Show("Enter name for your file");
-                    Filename_TextBox.Focus();
-                    Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
-
-                }
-                else if (SameNameCounter > 1 || Filename_TextBox.Text == "")
-                {
-                    MessageBox.Show("File with this name already exists!");
-                    Filename_TextBox.Text = System.IO.Path.GetFileNameWithoutExtension(nf.Name);
-                    Filename_TextBox.Focus();
-                    Filename_TextBox.CaretIndex = Filename_TextBox.Text.Length;
-                    Trace.Write('2');
-                }
-                else {
-                    LastPressedButton.Content = Filename_TextBox.Text.Trim();
-                    string ParentPath = nf.Path.Remove(nf.Path.Length - nf.Name.Length - 1);    //getting file parent path
-
-                    //changing file name
-                    File.Move(nf.Path, ParentPath + "\\" + Filename_TextBox.Text.Trim() + ".txt");
-                    if (nf.Name != Filename_TextBox.Text.Trim() + ".txt")
-                    {
-                        File.Delete(nf.Path);                                                       //deleting old file
-                    }
-                    nf.Name = Filename_TextBox.Text.Trim() + ".txt";
-                    nf.Path = ParentPath + "\\" + nf.Name;
-                    Trace.Write('3');
+                    CSV.WriteRecords(ButtonFileDict.Values);
                 }
             }
         }
 
+        private void Filename_TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (LastPressedButton != null)
+                LastPressedButton.Content = Filename_TextBox.Text;
+        }
+
         private void NotesAndArchive_Button_Click(object sender, RoutedEventArgs e)
         {
+            Buttons_StackPanel.Children.Clear();
+            LastPressedButton = null;
             if (NotesOpened)
             {
                 //archive
@@ -217,13 +210,13 @@ namespace Notes_WPF
                 AddNote_Button.Visibility = Visibility.Hidden;
                 Filename_TextBox.IsReadOnly = true;
                 Edit_TextBox.IsReadOnly = true;
-                Buttons_StackPanel.Children.Clear();
-
-                foreach (KeyValuePair<Button, Notefile> pair in ButtFileDict)
+                
+                foreach (var elem in ButtonFileDict)
                 {
-                    if (pair.Value.isArchived == true)
+                    if (elem.Value.IsArchived == true)
                     {
-                        Buttons_StackPanel.Children.Add(pair.Key);
+                        elem.Key.Content = elem.Value.Name;
+                        Buttons_StackPanel.Children.Add(elem.Key);
                     }
                 }
             }
@@ -235,49 +228,118 @@ namespace Notes_WPF
                 AddNote_Button.Visibility = Visibility.Visible;
                 Filename_TextBox.IsReadOnly = false;
                 Edit_TextBox.IsReadOnly = false;
-                Buttons_StackPanel.Children.Clear();
-
-                foreach (KeyValuePair<Button, Notefile> pair in ButtFileDict)
+                
+                foreach (var elem in ButtonFileDict)
                 {
-                    if(pair.Value.isArchived == false)
+                    if (elem.Value.IsArchived == false)
                     {
-                        Buttons_StackPanel.Children.Add(pair.Key);
+                        elem.Key.Content = elem.Value.Name;
+                        Buttons_StackPanel.Children.Add(elem.Key);
                     }
                 }
+                
             }
 
             Edit_TextBox.Text = "";
             Filename_TextBox.Text = "";
             CreationData_label.Content = "";
-            LastPressedButton = null;
         }
 
         private void DeleteNote_Button_Click(object sender, RoutedEventArgs e)
         {
-            DeleteLastNote();
+            if (LastPressedButton != null)
+            {
+                ButtonFileDict.Remove(LastPressedButton);
+
+                var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false,
+                };
+                using (var Stream = File.Open(NotesFileCSVPath, FileMode.Create))
+                using (var Writer = new StreamWriter(Stream))
+                using (var CSV = new CsvWriter(Writer, Config))
+                {
+                    CSV.WriteRecords(ButtonFileDict.Values);
+                }
+
+                Buttons_StackPanel.Children.Remove(LastPressedButton);
+                ButtonFileDict.Remove(LastPressedButton);
+
+                //select another file from the list
+                if(ButtonFileDict.Count() != 0)
+                {
+                    foreach (var elem in ButtonFileDict)
+                    {
+                        if(elem.Value.IsArchived != NotesOpened)
+                        {
+                            LastPressedButton = elem.Key;
+                            Edit_TextBox.Text = elem.Value.Text;
+                            Filename_TextBox.Text = elem.Value.Name;
+                            CreationData_label.Content = elem.Value.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    LastPressedButton = null;
+                    Edit_TextBox.Text = "";
+                    Filename_TextBox.Text = "";
+                    CreationData_label.Content = DateTime.MinValue;
+                }
+            }
         }
 
         private void SendToAcrhive_Button_Click(object sender, RoutedEventArgs e)
         {
-            if(LastPressedButton != null)
+            if (LastPressedButton != null && ButtonFileDict.TryGetValue(LastPressedButton, out Notefile Note))
             {
-                ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf);//getting file that is connected to a button
-                if (nf.isArchived == false) {
-                    ButtFileDict[LastPressedButton].isArchived = true;
-                    File.Move(nf.Path, ArchiveFilePath + @"\" + nf.Name);
-                    ButtFileDict[LastPressedButton].Path = ArchiveFilePath + @"\" + nf.Name;
-                }
-                else //if true
+                Note.IsArchived = !Note.IsArchived;
+
+                Buttons_StackPanel.Children.Clear();
+
+                if (NotesOpened)
                 {
-                    ButtFileDict[LastPressedButton].isArchived = false;
-                    File.Move(nf.Path, NotesFilePath + @"\" + nf.Name);
-                    ButtFileDict[LastPressedButton].Path = NotesFilePath + @"\" + nf.Name;
+                    foreach (var elem in ButtonFileDict)
+                    {
+                        if (!elem.Value.IsArchived)
+                        {
+                            Buttons_StackPanel.Children.Add(elem.Key);
+                        }
+                    }
+                }
+                else {
+                    foreach (var elem in ButtonFileDict)
+                    {
+                        if (elem.Value.IsArchived)
+                        {
+                            Buttons_StackPanel.Children.Add(elem.Key);
+                        }
+                    }
                 }
 
-                Buttons_StackPanel.Children.Remove(LastPressedButton);
-                Edit_TextBox.Text = "";
-                Filename_TextBox.Text = "";
-                CreationData_label.Content = "";
+                //select another file from the list
+                if (ButtonFileDict.Count() != 0)
+                {
+                    foreach (var elem in ButtonFileDict)
+                    {
+                        if (elem.Value.IsArchived != NotesOpened)
+                        {
+                            LastPressedButton = elem.Key;
+                            Edit_TextBox.Text = elem.Value.Text;
+                            Filename_TextBox.Text = elem.Value.Name;
+                            CreationData_label.Content = elem.Value.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    LastPressedButton = null;
+                    Edit_TextBox.Text = "";
+                    Filename_TextBox.Text = "";
+                    CreationData_label.Content = DateTime.MinValue;
+                }
             }
         }
 
@@ -286,20 +348,20 @@ namespace Notes_WPF
             Buttons_StackPanel.Children.Clear();
 
             List<Notefile> NotesList = new List<Notefile>();
-            foreach(KeyValuePair<Button, Notefile> pair in ButtFileDict)
+            foreach (var elem in ButtonFileDict)
             {
-                if (pair.Value.isArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened)
                 {
-                    NotesList.Add(pair.Value);
-                    ButtFileDict.Remove(pair.Key);
+                    NotesList.Add(elem.Value);
+                    ButtonFileDict.Remove(elem.Key);
                 }
             }
 
-            for(int i = 0; i < NotesList.Count; i++)
+            for (int i = 0; i < NotesList.Count; i++)
             {
-                for(int j = i + 1; j < NotesList.Count; j++)
+                for (int j = i + 1; j < NotesList.Count; j++)
                 {
-                    switch(string.Compare(NotesList[i].Name, NotesList[j].Name, StringComparison.CurrentCultureIgnoreCase))
+                    switch (string.Compare(NotesList[i].Name, NotesList[j].Name, StringComparison.CurrentCultureIgnoreCase))
                     {
                         case -1:
                             break;
@@ -321,18 +383,15 @@ namespace Notes_WPF
                 var newButton = new Button() { Content = System.IO.Path.GetFileNameWithoutExtension(nf.Name), Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3"), Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
                 newButton.Click += SelectedNoteButton_Click;
 
-                ButtFileDict.Add(newButton, nf);
+                ButtonFileDict.Add(newButton, nf);
             }
-            foreach(KeyValuePair<Button, Notefile> pair in ButtFileDict)
+            foreach (var elem in ButtonFileDict)
             {
-                if(pair.Value.isArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened)
                 {
-                    Buttons_StackPanel.Children.Add(pair.Key);
+                    Buttons_StackPanel.Children.Add(elem.Key);
                 }
             }
-            
-            
-            
         }
 
         private void CreationDateSort_Button_Click(object sender, RoutedEventArgs e)
@@ -340,12 +399,12 @@ namespace Notes_WPF
             Buttons_StackPanel.Children.Clear();
 
             List<Notefile> NotesList = new List<Notefile>();
-            foreach (KeyValuePair<Button, Notefile> pair in ButtFileDict)
+            foreach (var elem in ButtonFileDict)
             {
-                if (pair.Value.isArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened)
                 {
-                    NotesList.Add(pair.Value);
-                    ButtFileDict.Remove(pair.Key);
+                    NotesList.Add(elem.Value);
+                    ButtonFileDict.Remove(elem.Key);
                 }
             }
 
@@ -353,7 +412,7 @@ namespace Notes_WPF
             {
                 for (int j = i + 1; j < NotesList.Count; j++)
                 {
-                    if(NotesList[i].CreatiionDate > NotesList[j].CreatiionDate) { 
+                    if(NotesList[i].CreationDate > NotesList[j].CreationDate) { 
                             Notefile buff = NotesList[i];
                             NotesList[i] = NotesList[j];
                             NotesList[j] = buff;
@@ -368,13 +427,13 @@ namespace Notes_WPF
                 var newButton = new Button() { Content = System.IO.Path.GetFileNameWithoutExtension(nf.Name), Height = 40, FontSize = 20, Foreground = (Brush)bc.ConvertFrom("#dcdde3"), Margin = new Thickness(0, 0, 0, 2), Background = (Brush)bc.ConvertFrom("#5b5b73"), BorderThickness = new Thickness(0, 0, 0, 0) };
                 newButton.Click += SelectedNoteButton_Click;
 
-                ButtFileDict.Add(newButton, nf);
+                ButtonFileDict.Add(newButton, nf);
             }
-            foreach (KeyValuePair<Button, Notefile> pair in ButtFileDict)
+            foreach (var elem in ButtonFileDict)
             {
-                if (pair.Value.isArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened)
                 {
-                    Buttons_StackPanel.Children.Add(pair.Key);
+                    Buttons_StackPanel.Children.Add(elem.Key);
                 }
             }
         }
@@ -382,20 +441,6 @@ namespace Notes_WPF
         private void timer_Tick(object sender, EventArgs e)
         {
             LiveTimeLabel.Content = DateTime.Now.ToString("HH:mm:ss");
-        }
-
-        private void DeleteLastNote()
-        {
-            if (LastPressedButton != null)
-            {
-                ButtFileDict.TryGetValue(LastPressedButton, out Notefile nf);//getting file that is connected to a button
-                File.Delete(nf.Path);
-                Buttons_StackPanel.Children.Remove(LastPressedButton);
-                ButtFileDict.Remove(LastPressedButton);
-                Edit_TextBox.Text = "";
-                Filename_TextBox.Text = "";
-                CreationData_label.Content = "";
-            }
         }
     }
 }

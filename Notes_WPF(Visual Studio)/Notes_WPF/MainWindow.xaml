@@ -115,6 +115,7 @@
                              IsEnabled="False"
                              MinHeight="30"
                              FontSize="30"
+                             MaxLength="40"
                              Padding="5 0 0 0"
                              BorderThickness="0"
                              Background="#121d2d"
@@ -122,7 +123,9 @@
                              FontStretch="Normal"
                              Foreground="#dcdde3"
                              FontWeight="Bold" 
-                             LostKeyboardFocus="Filename_TextBox_LostKeyboardFocus"/>
+                             LostKeyboardFocus="Filename_TextBox_LostKeyboardFocus"
+                             TextChanged="Filename_TextBox_TextChanged"/>
+
 
                     <Label x:Name="CreationData_label"
                            Grid.Column="1"
@@ -144,7 +147,7 @@
                             BorderBrush="#316da8"
                             BorderThickness="1"
                             Content="❐" 
-                            Click="SendToAcrhive_Button_Click"/>
+                            Click="SendToAcrhive_Button_Click" HorizontalAlignment="Left" Margin="3,4,0,3"/>
 
                     <Button x:Name="DeleteNote_Button"
                             Grid.Column="3"

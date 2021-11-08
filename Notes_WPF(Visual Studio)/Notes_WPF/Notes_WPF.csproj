@@ -7,4 +7,8 @@
     <ApplicationIcon>Note_icon.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="27.1.1" />
+  </ItemGroup>
+
 </Project>

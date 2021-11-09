@@ -24,6 +24,7 @@ namespace Notes_WPF
 {
     public partial class MainWindow : Window
     {
+        List<string> TagsList = new List<string>();
         Dictionary<Button, Notefile> ButtonFileDict = new Dictionary<Button, Notefile>();
         Button LastPressedButton = null;
         bool NotesOpened = true;
@@ -55,11 +56,25 @@ namespace Notes_WPF
                         
                         Buttons_StackPanel.Children.Add(newButton);
                     }
+                    if (!TagExists(item.Tag))
+                    {
+                        TagsList.Add(item.Tag.Trim());
+                        TagsComboBox.Items.Insert(0, item.Tag.Trim());
+                    }
+                    
                 
                     ButtonFileDict.Add(newButton, item);
                 }
             }
+            if (!TagExists("All"))
+            {
+                TagsList.Insert(0, "All");
+                TagsComboBox.Items.Insert(0, "All");
+                TagsComboBox.SelectedIndex = 0;
+            }
 
+            if (TagsComboBox.Items.Count > 0)
+                TagsComboBox.SelectedIndex = 0;
             DispatcherTimer LiveTime = new DispatcherTimer();
             LiveTime.Interval = TimeSpan.FromSeconds(1);
             LiveTime.Tick += timer_Tick;
@@ -101,7 +116,7 @@ namespace Notes_WPF
             //add new note
             var NewNote = new List<Notefile>
             {
-                new Notefile { Name = "New Note", Text = "", CreationDate = DateTime.Now, IsArchived = false },
+                new Notefile { Name = "New Note", Text = "", CreationDate = DateTime.Now, IsArchived = false, Tag = "All"},
             };
             var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
@@ -144,12 +159,13 @@ namespace Notes_WPF
                 //UI changes
                 Filename_TextBox.Text = Note.Name;
                 CreationData_label.Content = Note.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
+                TagTextBox.Text = Note.Tag.Trim();
 
                 //Textbox
                 Edit_TextBox.Text = Note.Text;
                 Filename_TextBox.IsEnabled = true;
                 Edit_TextBox.Focus();
-                Edit_TextBox.CaretIndex = Edit_TextBox.Text.Length;
+                Edit_TextBox.CaretIndex = Edit_TextBox.Text.Length;              
             }                    
         }
 
@@ -176,7 +192,7 @@ namespace Notes_WPF
         {
             if (LastPressedButton != null && ButtonFileDict.TryGetValue(LastPressedButton, out Notefile Note))
             {
-                Note.Name = Filename_TextBox.Text;
+                Note.Name = Filename_TextBox.Text.Trim();
                 LastPressedButton.Content = Note.Name;
 
                 var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -209,13 +225,18 @@ namespace Notes_WPF
                 NotesAndArchive_Button.Content = "Archive";
                 AddNote_Button.Visibility = Visibility.Hidden;
                 Filename_TextBox.IsReadOnly = true;
-                Edit_TextBox.IsReadOnly = true;
+                TagsComboBox.IsEditable = false;
+                TagTextBox.IsReadOnly = true;
                 
                 foreach (var elem in ButtonFileDict)
                 {
-                    if (elem.Value.IsArchived == true)
+                    if (elem.Value.IsArchived == true && elem.Value.Tag == TagsComboBox.SelectedItem.ToString())
                     {
                         elem.Key.Content = elem.Value.Name;
+                        Buttons_StackPanel.Children.Add(elem.Key);
+                    }
+                    else if (TagsComboBox.SelectedItem.ToString() == "All" && elem.Value.IsArchived)
+                    {
                         Buttons_StackPanel.Children.Add(elem.Key);
                     }
                 }
@@ -228,18 +249,24 @@ namespace Notes_WPF
                 AddNote_Button.Visibility = Visibility.Visible;
                 Filename_TextBox.IsReadOnly = false;
                 Edit_TextBox.IsReadOnly = false;
-                
+                TagTextBox.IsReadOnly = false;
+
                 foreach (var elem in ButtonFileDict)
                 {
-                    if (elem.Value.IsArchived == false)
+                    if (elem.Value.IsArchived == false && elem.Value.Tag == TagsComboBox.SelectedItem.ToString())
                     {
                         elem.Key.Content = elem.Value.Name;
+                        Buttons_StackPanel.Children.Add(elem.Key);
+                    }
+                    else if (TagsComboBox.SelectedItem.ToString() == "All" && !elem.Value.IsArchived)
+                    {
                         Buttons_StackPanel.Children.Add(elem.Key);
                     }
                 }
                 
             }
 
+            TagTextBox.Text = "";
             Edit_TextBox.Text = "";
             Filename_TextBox.Text = "";
             CreationData_label.Content = "";
@@ -249,6 +276,8 @@ namespace Notes_WPF
         {
             if (LastPressedButton != null)
             {
+                string LastTag = TagsComboBox.Text;
+
                 ButtonFileDict.Remove(LastPressedButton);
 
                 var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
@@ -265,29 +294,45 @@ namespace Notes_WPF
                 Buttons_StackPanel.Children.Remove(LastPressedButton);
                 ButtonFileDict.Remove(LastPressedButton);
 
-                //select another file from the list
-                if(ButtonFileDict.Count() != 0)
+                //Delete tag if there are no files that contain it
+                foreach (var tag in TagsList.ToList())
                 {
-                    foreach (var elem in ButtonFileDict)
+                    int counter = 0;
+                    foreach (var file in ButtonFileDict.Values)
                     {
-                        if(elem.Value.IsArchived != NotesOpened)
+                        if (file.Tag.ToLower().Trim() == tag.ToLower().Trim())
                         {
-                            LastPressedButton = elem.Key;
-                            Edit_TextBox.Text = elem.Value.Text;
-                            Filename_TextBox.Text = elem.Value.Name;
-                            CreationData_label.Content = elem.Value.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
-                            break;
+                            counter++;
                         }
                     }
+                    if (counter == 0 || tag.Trim() == "")
+                    {
+                        TagsList.Remove(tag);
+                    }
+                }
+                TagsComboBox.Items.Clear();
+                foreach (var Tag in TagsList)
+                {
+                    TagsComboBox.Items.Insert(0, Tag);
+                }
+
+                if (!TagExists("All"))
+                {
+                    TagsList.Add("All");
+                    TagsComboBox.Items.Insert(0, "All");
+                }
+
+                if (LastTag != "All")
+                {
+                    TagsComboBox.SelectedValue = LastTag;
                 }
                 else
                 {
-                    LastPressedButton = null;
-                    Edit_TextBox.Text = "";
-                    Filename_TextBox.Text = "";
-                    CreationData_label.Content = DateTime.MinValue;
+                    TagsComboBox.SelectedIndex = 0;
                 }
             }
+
+
         }
 
         private void SendToAcrhive_Button_Click(object sender, RoutedEventArgs e)
@@ -302,7 +347,11 @@ namespace Notes_WPF
                 {
                     foreach (var elem in ButtonFileDict)
                     {
-                        if (!elem.Value.IsArchived)
+                        if (!elem.Value.IsArchived && elem.Value.Tag == TagsComboBox.SelectedItem.ToString())
+                        {
+                            Buttons_StackPanel.Children.Add(elem.Key);
+                        }
+                        else if (TagsComboBox.SelectedItem.ToString() == "All" && !elem.Value.IsArchived)
                         {
                             Buttons_StackPanel.Children.Add(elem.Key);
                         }
@@ -311,34 +360,15 @@ namespace Notes_WPF
                 else {
                     foreach (var elem in ButtonFileDict)
                     {
-                        if (elem.Value.IsArchived)
+                        if (elem.Value.IsArchived && elem.Value.Tag == TagsComboBox.SelectedItem.ToString())
+                        {
+                            Buttons_StackPanel.Children.Add(elem.Key);
+                        }
+                        else if (TagsComboBox.SelectedItem.ToString() == "All" && elem.Value.IsArchived)
                         {
                             Buttons_StackPanel.Children.Add(elem.Key);
                         }
                     }
-                }
-
-                //select another file from the list
-                if (ButtonFileDict.Count() != 0)
-                {
-                    foreach (var elem in ButtonFileDict)
-                    {
-                        if (elem.Value.IsArchived != NotesOpened)
-                        {
-                            LastPressedButton = elem.Key;
-                            Edit_TextBox.Text = elem.Value.Text;
-                            Filename_TextBox.Text = elem.Value.Name;
-                            CreationData_label.Content = elem.Value.CreationDate.ToString("dddd, dd MMMM yyyy HH:mm:ss");
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    LastPressedButton = null;
-                    Edit_TextBox.Text = "";
-                    Filename_TextBox.Text = "";
-                    CreationData_label.Content = DateTime.MinValue;
                 }
             }
         }
@@ -387,7 +417,11 @@ namespace Notes_WPF
             }
             foreach (var elem in ButtonFileDict)
             {
-                if (elem.Value.IsArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened && elem.Value.Tag == TagsComboBox.SelectedValue.ToString())
+                {
+                    Buttons_StackPanel.Children.Add(elem.Key);
+                }
+                else if (elem.Value.IsArchived != NotesOpened && TagsComboBox.SelectedValue.ToString() == "All")
                 {
                     Buttons_StackPanel.Children.Add(elem.Key);
                 }
@@ -420,7 +454,6 @@ namespace Notes_WPF
                 }
             }
 
-            NotesList.Reverse();
             foreach (Notefile nf in NotesList)
             {
                 var bc = new BrushConverter();
@@ -431,7 +464,11 @@ namespace Notes_WPF
             }
             foreach (var elem in ButtonFileDict)
             {
-                if (elem.Value.IsArchived != NotesOpened)
+                if (elem.Value.IsArchived != NotesOpened && elem.Value.Tag == TagsComboBox.SelectedValue.ToString())
+                {
+                    Buttons_StackPanel.Children.Add(elem.Key);
+                }
+                else if(elem.Value.IsArchived != NotesOpened && TagsComboBox.SelectedValue.ToString() == "All")
                 {
                     Buttons_StackPanel.Children.Add(elem.Key);
                 }
@@ -441,6 +478,109 @@ namespace Notes_WPF
         private void timer_Tick(object sender, EventArgs e)
         {
             LiveTimeLabel.Content = DateTime.Now.ToString("HH:mm:ss");
+        }
+
+        private void TagTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (LastPressedButton != null && ButtonFileDict.TryGetValue(LastPressedButton, out Notefile Note))
+            {
+
+                string LastTag = TagsComboBox.Text;
+
+                if(TagTextBox.Text.Trim() == "")
+                {
+                    TagTextBox.Text = "All";
+                }
+
+                Note.Tag = TagTextBox.Text.Trim();
+
+                if (!TagExists(Note.Tag))
+                {
+                    TagsList.Add(Note.Tag);
+                    TagsComboBox.Items.Insert(0, Note.Tag);
+                }
+
+                var Config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false,
+                };
+                using (var Stream = File.Open(NotesFileCSVPath, FileMode.Create))
+                using (var Writer = new StreamWriter(Stream))
+                using (var CSV = new CsvWriter(Writer, Config))
+                {
+                    CSV.WriteRecords(ButtonFileDict.Values);
+                }
+
+                //Delete tag if there are no files that contain it
+                foreach (var tag in TagsList.ToList())
+                {
+                    int counter = 0;
+                    foreach (var file in ButtonFileDict.Values)
+                    {
+                        if (file.Tag.ToLower().Trim() == tag.ToLower().Trim())
+                        {
+                            counter++;
+                        }
+                    }
+                    if (counter == 0 || tag.Trim() == "")
+                    {
+                        TagsList.Remove(tag);
+                    }
+                }
+                TagsComboBox.Items.Clear();
+                foreach (var Tag in TagsList)
+                {
+                    TagsComboBox.Items.Insert(0, Tag);
+                }
+
+                if (!TagExists("All"))
+                {
+                    TagsList.Add("All");
+                    TagsComboBox.Items.Insert(0, "All");
+                }
+
+                if (LastTag != "All")
+                {
+                    TagsComboBox.SelectedValue = Note.Tag;
+                }
+                else
+                {
+                    TagsComboBox.SelectedIndex = 0;
+                }
+            }
+        }
+
+        private bool TagExists(string Tag)
+        {
+            foreach(var elem in TagsList)
+            {
+                if(elem.ToLower() == Tag.ToLower())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void TagsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (TagsComboBox.Items.Count <= 0)
+            {
+                return;
+            }
+            Buttons_StackPanel.Children.Clear();
+            foreach(var elem in ButtonFileDict)
+            {
+                if(elem.Value.Tag == TagsComboBox.SelectedItem.ToString() && elem.Value.IsArchived != NotesOpened)
+                {
+                    Buttons_StackPanel.Children.Add(elem.Key);
+                }
+                else if (TagsComboBox.SelectedItem.ToString() == "All" && elem.Value.IsArchived != NotesOpened)
+                {
+                    Buttons_StackPanel.Children.Add(elem.Key);
+                }
+            }
         }
     }
 }

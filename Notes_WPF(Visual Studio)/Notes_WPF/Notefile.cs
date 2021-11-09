@@ -21,6 +21,8 @@ namespace Notes_WPF
         public DateTime CreationDate { get; set; }
         [Index(3)]
         public bool IsArchived { get; set; }
+        [Index(4)]
+        public string Tag { get; set; }
 
 
 
@@ -30,19 +32,16 @@ namespace Notes_WPF
             Text = "";
             CreationDate = DateTime.MinValue;
             IsArchived = false;
+            Tag = "";
         }
 
-        public Notefile(string Name, string Text, DateTime CreationDate, bool IsArchived)
+        public Notefile(string Name, string Text, DateTime CreationDate, bool IsArchived, string Tag)
         {
             this.Name = Name;
             this.Text = Text;
             this.CreationDate = CreationDate;
             this.IsArchived = IsArchived;
-        }
-
-        public void WriteToFile(string text)
-        {
-            //TO DO
+            this.Tag = Tag;
         }
     }
 }
